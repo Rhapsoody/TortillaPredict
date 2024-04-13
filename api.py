@@ -12,6 +12,16 @@ async def read_root():
 
 @app.post("/train/")
 async def train_model(data: dict):
+    """
+    Description de l'endpoint
+
+    Args:
+        item_id (int): L'identifiant de l'élément à récupérer.
+        q (str, optional): Un paramètre de requête optionnel.
+
+    Returns:
+        dict: Les données de l'élément récupéré.
+    """
     return {"message": "Succès de l'entrainement..."}
 
 
