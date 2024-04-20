@@ -1,9 +1,13 @@
 #API ENTRAINEMENT DE MODELE ET PREDICTION
 
 from fastapi import FastAPI
+import pickle
 
 
 app = FastAPI()
+
+with open("model.pkl", "rb") as file:
+    model = pickle.load(file)
 
 @app.get("/")
 async def read_root():
