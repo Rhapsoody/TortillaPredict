@@ -34,6 +34,7 @@ async def train_model(uploadedFile: UploadFile = File(...)):
     Returns:
         dict: Les données de l'élément récupéré.
     """
+    print("Début de l'entraînement du modèle...")
     if uploadedFile is None:
         raise HTTPException(status_code=400, detail="Aucun fichier n'a été envoyé.")
     
@@ -46,9 +47,10 @@ async def train_model(uploadedFile: UploadFile = File(...)):
         raise HTTPException(status_code=400, detail="Le fichier envoyé n'est pas un fichier CSV.")
 
     try:
+        print("...............................;.")
         model = fn.init_model_training(data)
 
-        return {"message": "Entrainement du modèle réussi...", "model": model}
+        return {"status_code": 200, "message": "Entrainement du modèle réussi...", "model": model}
     except Exception as e:
         return JSONResponse(status_code=400, content={"message": str(e)})
 
@@ -72,7 +74,7 @@ async def predict_price(input_data: UploadFile = File(...)):
 
         prediction_output = fn.predict_price(prediction_input)
 
-        return {"predictions": prediction_output.tolist()}
+        return {"status_code": 200, "predictions": prediction_output.tolist()}
     
     except Exception as e:
         return JSONResponse(status_code=400, content={"message": str(e)})
@@ -112,7 +114,7 @@ async def question_answering(question: str):
 
         response = chat_completion.choices[0].message.content
 
-        return {"success => reponse =": response}
+        return {"status_code": 200, "message": response}
 
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))

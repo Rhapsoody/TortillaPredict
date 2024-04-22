@@ -8,19 +8,19 @@ API_BASE_URL = "http://127.0.0.1:8000"
 
 # Function to train the model
 def train_model(file):
-    response = requests.post(f"{API_BASE_URL}/train", files={"file": (file.name, file, file.type)})
+    response = requests.post(f"{API_BASE_URL}/train", files={"uploadedFile": (file.name, file, file.type)})    
     return response.json()
 
 # Function to make price prediction
 def predict_price(file):
-    print(file, 'file')
-    response = requests.post(f"{API_BASE_URL}/predict", files={"file": (file.name, file, file.type)})
-    return response
+    response = requests.post(f"{API_BASE_URL}/predict", files={"input_data": (file.name, file, file.type)})
+    return response.json()
 
 # Function to retrieve the model
-def retrieve_model():
-    response = requests.get(f"{API_BASE_URL}/model/")
-    return response
+def retrieve_model(question):
+    response = requests.post(f"{API_BASE_URL}/model?question={question}")
+    print(response.json(), 'json-----------------------------------')
+    return response.json()
 
 # Main page
 def main():
@@ -28,7 +28,7 @@ def main():
 
     # Navigation bar
     st.sidebar.title("Navigation")
-    page = st.sidebar.radio("", ["Documentation", "Model Training", "Price Prediction"])
+    page = st.sidebar.radio("", ["Documentation", "Model Training", "Price Prediction", "Retrieve Model"])
 
     # Display the selected page
     if page == "Documentation":
@@ -50,14 +50,15 @@ def model_training_page():
     st.header("Model Training")
 
     # File uploader for model training data
-    train_file = st.file_uploader("Upload CSV", type=["csv"], key="train")
+    train_file = st.file_uploader("Upload CSV",type=["csv"], key="train")
 
     if st.button("Train Model") and train_file  is not None:
         try:
             # Train the model
             response = train_model(train_file)
             if response.get('status_code') == 200:
-                st.success(f"{response.get('message')} Model Name: {response.get('model_name')}")
+                st.success(f"{response.get('message')}")
+                st.success("Model : " +f"{response.get('model')}")
             else:
                 st.error(response.get('message'))
         except Exception as e:
@@ -69,16 +70,14 @@ def price_prediction_page():
     st.header("Price Prediction")
 
     # File uploader for price prediction data
-    prediction_data_file = st.file_uploader("Prediction Data (CSV)", type=["csv"])
+    prediction_file = st.file_uploader("Prediction Data (CSV)", type=["csv"])
 
-    if st.button("Predict Price") and prediction_data_file is not None:
+    if st.button("Predict Price") and prediction_file is not None:
         try:
             # Make price prediction
-            response = predict_price(prediction_data_file)
-            print("-------------------------------------response", response)
-            if response.status_code == 200:
-                prediction_result = response.prediction
-                st.success(f"Prediction successful! Result: {prediction_result}")
+            response = predict_price(prediction_file)
+            if response.get('status_code') == 200:
+                st.success(f"Prediction successful! Result: {response.get('predictions')}")
             else:
                 st.error("Error during prediction:", response)
         except Exception as e:
@@ -88,13 +87,14 @@ def price_prediction_page():
 # Retrieve model page
 def retrieve_model_page():
     st.header("Retrieve Model")
+    question = st.text_input('Enter a question')
 
     # Button to retrieve the model
     if st.button("Retrieve Model"):
         # Retrieve the model
-        response = retrieve_model()
-        if response.status_code == 200:
-            st.success("Model retrieved successfully!")
+        response = retrieve_model(question)
+        if response.get('status_code') == 200:
+            st.success(response.get('message'))
         else:
             st.error("Error during model retrieval.")
 
