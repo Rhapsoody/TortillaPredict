@@ -8,14 +8,14 @@ API_BASE_URL = "http://127.0.0.1:8000"
 
 # Function to train the model
 def train_model(train_data):
-    json_data = train_data.to_json(orient="records")
-    response = requests.post(f"{API_BASE_URL}/train/", json=json_data)
+    files = {'uploadedFile': ("train_data.csv", train_data)}
+    response = requests.post(f"{API_BASE_URL}/train/", files=files)
     return response
 
 # Function to make price prediction
 def predict_price(prediction_data):
-    json_data = prediction_data.to_json(orient="records")
-    response = requests.post(f"{API_BASE_URL}/predict/", json=json_data)
+    files = {'input_data': ("prediction_data.csv", prediction_data)}
+    response = requests.post(f"{API_BASE_URL}/predict/", files=files)
     return response
 
 # Function to retrieve the model
