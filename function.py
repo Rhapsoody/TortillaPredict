@@ -2,74 +2,78 @@ import datetime
 import os
 import pickle
 import random
+import pandas as pd
 
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error
-from sklearn.linear_model import LinearRegression
+from sklearn.ensemble import RandomForestRegressor
 
-
-#TODO: Refaire les commentaires qui sont en template
-
-def init_model_training(data):
+def init_model_training(data: pd.DataFrame):
     """
     Description de l'endpoint
 
     Args:
-        item_id (int): L'identifiant de l'élément à récupérer.
-        q (str, optional): Un paramètre de requête optionnel.
+        data (): Le dataset sur lequel l'entrainement se fera.
 
     Returns:
-        dict: Les données de l'élément récupéré.
+        message: Message de succes de l'entrainement.
     """
-    X = data["State", "City", "Year", "Month", "Day", "Store type"]
-    y = data["Price per kilogram"]
+    try: 
+        if not isinstance(data, pd.DataFrame):
+            raise ValueError("Le dataset doit être un DataFrame")
+
+        X = data["State", "City", "Year", "Month", "Day", "Store type"]
+        target_value = data["Price per kilogram"]
 
 
-    # Entrainement du modèle
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-    model = LinearRegression()
-    model.fit(X_train, y_train)
-
-    if not os.path.exists("models"):
-        os.makedirs("models")
-
-    # Sauvegarde du modèle avec un nom unique
-    model_name = f"model_{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}.pkl"
-    with open(model_name, "wb") as file:
-        pickle.dump(model, file)
-    
-    return {"Training model" : "Done..."}
+        # Entrainement du modèle
+        X_train, X_test, y_train, y_test = train_test_split(X, target_value, test_size=0.2, random_state=42)
+        model = RandomForestRegressor(n_estimators=20, random_state=1)
+        model.fit(X_train, y_train)
+        
+        model_name = f"model_{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}.pkl"
+        with open(f'models/' + model_name, 'wb') as in_save_file:
+            pickle.dump(model, in_save_file)
+        
+        return {"Training model" : "Done..."}
+    except Exception as e:
+        return {"Error": str(e)}
 
 
-def get_model():
+def get_last_saved_model():
     """
-    Description de l'endpoint
+    Recuperation des données du modele entrainé.
 
     Args:
-        item_id (int): L'identifiant de l'élément à récupérer.
-        q (str, optional): Un paramètre de requête optionnel.
+       no args
 
     Returns:
-        dict: Les données de l'élément récupéré.
+        dict: Les données sur le modele entrainé.
     """
-    models = os.listdir("models")
-    model_name = random.choice(models)
-    with open(f"models/{model_name}", "rb") as file:
+    models_in_dir = os.listdir("models")
+    if not models_in_dir:
+        return {"error": "Aucun modèle n'est disponible."}
+
+    latest_model = max(models_in_dir, key=os.path.getctime)
+    with open(f"models/{latest_model}", "rb") as file:
         model = pickle.load(file)
-    return {"model": model_name, "coef": model.coef_, "intercept": model.intercept_}    
+
+    return {"model": model, "coef": model.coef_, "intercept": model.intercept_}    
 
 
-def predict_price(data):
+def predict_price(data: pd.DataFrame):
     """
-    Description de l'endpoint
+    Fonction de prédiction des prix.
 
     Args:
-        item_id (int): L'identifiant de l'élément à récupérer.
-        q (str, optional): Un paramètre de requête optionnel.
+        data: Les données sur lesquelles la prédiction se fera.
 
     Returns:
-        dict: Les données de l'élément récupéré.
-    """
-    model = get_model()
-    prediction = model.predict(data)
-    return {"Price per kilogram": prediction}
+        array: Les prix prédits.
+    """ 
+    try:
+        model = get_last_saved_model()["model"]
+        prediction = model.predict(data)
+        return {"Price per kilogram": prediction}
+    except Exception as e:
+        return {"Error": str(e)}
