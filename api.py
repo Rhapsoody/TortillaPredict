@@ -34,7 +34,6 @@ async def train_model(uploadedFile: UploadFile = File(...)):
     Returns:
         dict: Les données de l'élément récupéré.
     """
-    print("Début de l'entraînement du modèle...")
     if uploadedFile is None:
         raise HTTPException(status_code=400, detail="Aucun fichier n'a été envoyé.")
     
@@ -47,7 +46,6 @@ async def train_model(uploadedFile: UploadFile = File(...)):
         raise HTTPException(status_code=400, detail="Le fichier envoyé n'est pas un fichier CSV.")
 
     try:
-        print("...............................;.")
         model = fn.init_model_training(data)
 
         return {"status_code": 200, "message": "Entrainement du modèle réussi...", "model": model}

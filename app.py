@@ -19,7 +19,6 @@ def predict_price(file):
 # Function to retrieve the model
 def retrieve_model(question):
     response = requests.post(f"{API_BASE_URL}/model?question={question}")
-    print(response.json(), 'json-----------------------------------')
     return response.json()
 
 # Main page
