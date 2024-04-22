@@ -49,7 +49,7 @@ def model_training_page():
     st.header("Model Training")
 
     # File uploader for model training data
-    train_file = st.file_uploader("Upload CSV",type=["csv"], key="train")
+    train_file = st.file_uploader("Upload CSV", type=["csv"], key="train")
 
     if st.button("Train Model") and train_file  is not None:
         try:
