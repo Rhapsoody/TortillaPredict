@@ -7,15 +7,14 @@ from function import *
 API_BASE_URL = "http://127.0.0.1:8000"
 
 # Function to train the model
-def train_model(train_data):
-    files = {'uploadedFile': ("train_data.csv", train_data)}
-    response = requests.post(f"{API_BASE_URL}/train/", files=files)
-    return response
+def train_model(file):
+    response = requests.post(f"{API_BASE_URL}/train", files={"file": (file.name, file, file.type)})
+    return response.json()
 
 # Function to make price prediction
-def predict_price(prediction_data):
-    files = {'input_data': ("prediction_data.csv", prediction_data)}
-    response = requests.post(f"{API_BASE_URL}/predict/", files=files)
+def predict_price(file):
+    print(file, 'file')
+    response = requests.post(f"{API_BASE_URL}/predict", files={"file": (file.name, file, file.type)})
     return response
 
 # Function to retrieve the model
@@ -43,65 +42,27 @@ def main():
 
 # Home page
 def home_page():
-    st.write("""
-    ## API Endpoints Documentation
-
-    This documentation provides information about the API endpoints available for the Tortilla Price Prediction App.
-
-    ### Train Model Endpoint
-
-    - **Description**: Trains a machine learning model using the provided training data.
-    - **Method**: POST
-    - **URL**: `/train/`
-    - **Parameters**:
-        - `data`: Training data in CSV format.
-    - **Response**:
-        - `message`: Indicates the status of the training process.
-
-    ### Predict Price Endpoint
-
-    - **Description**: Makes price predictions using the trained model.
-    - **Method**: POST
-    - **URL**: `/predict/`
-    - **Parameters**:
-        - `data`: Data for price prediction in CSV format.
-    - **Response**:
-        - `message`: Indicates the success of the prediction process.
-        - `prediction`: Predicted prices.
-
-    ### Retrieve Model Endpoint
-
-    - **Description**: Retrieves the trained machine learning model.
-    - **Method**: GET
-    - **URL**: `/model/`
-    - **Response**:
-        - `model`: Trained machine learning model.
-        - `coef`: Coefficients of the model.
-        - `intercept`: Intercept of the model.
-
-    ### Additional Information
-
-    - The API base URL is `http://127.0.0.1:8000`.
-    - Data should be provided in CSV format for both training and prediction endpoints.
-    """)
+    st.title("Documentation")
+    st.components.v1.iframe("http://127.0.0.1:8000/docs#/default", width=800, height=2000, scrolling=True)
 
 # Model training page
 def model_training_page():
     st.header("Model Training")
 
     # File uploader for model training data
-    train_data_file = st.file_uploader("Training Data (CSV)", type=["csv"])
+    train_file = st.file_uploader("Upload CSV", type=["csv"], key="train")
 
-    if st.button("Train Model") and train_data_file is not None:
-        # Read the uploaded CSV file
-        train_data = pd.read_csv(train_data_file)
+    if st.button("Train Model") and train_file  is not None:
+        try:
+            # Train the model
+            response = train_model(train_file)
+            if response.get('status_code') == 200:
+                st.success(f"{response.get('message')} Model Name: {response.get('model_name')}")
+            else:
+                st.error(response.get('message'))
+        except Exception as e:
+            st.error("An error occurred:", e)
 
-        # Train the model
-        response = train_model(train_data)
-        if response.status_code == 200:
-            st.success("Model trained successfully!")
-        else:
-            st.error("Error during model training.")
 
 # Price prediction page
 def price_prediction_page():
@@ -111,16 +72,18 @@ def price_prediction_page():
     prediction_data_file = st.file_uploader("Prediction Data (CSV)", type=["csv"])
 
     if st.button("Predict Price") and prediction_data_file is not None:
-        # Read the uploaded CSV file
-        prediction_data = pd.read_csv(prediction_data_file)
+        try:
+            # Make price prediction
+            response = predict_price(prediction_data_file)
+            print("-------------------------------------response", response)
+            if response.status_code == 200:
+                prediction_result = response.prediction
+                st.success(f"Prediction successful! Result: {prediction_result}")
+            else:
+                st.error("Error during prediction:", response)
+        except Exception as e:
+            st.error("An error occurred:", e)
 
-        # Make price prediction
-        response = predict_price(prediction_data)
-        if response.status_code == 200:
-            prediction_result = response.json()
-            st.success(f"Prediction successful! Result: {prediction_result}")
-        else:
-            st.error("Error during prediction.")
 
 # Retrieve model page
 def retrieve_model_page():
