@@ -10,21 +10,20 @@ import function as fn
 
 import pandas as pd
 
-from transformers import pipeline
+from openai import OpenAI
 
 app = FastAPI()
 
 # TODO: Repasser sur les commentaires
 
-with open("model.pkl", "rb") as file:
-    model = pickle.load(file)
+
 
 @app.get("/")
 async def read_root():
     return {"message": "Bienvenue sur l'API de prédiction des prix de tortillas au Mexique..."}
 
 
-@app.post("/train")
+@app.post("/train", tags=["Training/Prediction"])
 async def train_model(uploadedFile: UploadFile = File(...)):
     """
     Description de l'endpoint
@@ -55,7 +54,7 @@ async def train_model(uploadedFile: UploadFile = File(...)):
         return JSONResponse(status_code=400, content={"message": str(e)})
 
 
-@app.post("/predict")
+@app.post("/predict", tags=["Training/Prediction"])
 async def predict_price(input_data: UploadFile = File(...)):
 
     if input_data is None:
@@ -78,21 +77,32 @@ async def predict_price(input_data: UploadFile = File(...)):
         return JSONResponse(status_code=400, content={"message": str(e)})
 
 
-@app.get("/model")
-async def question_answering(question: str, context: str):
+@app.post("/model", tags=["HuggingFace"])
+async def question_answering(question: str):
     if not question:
         raise HTTPException(status_code=400, detail="Question is empty")
-    if not context:
-        raise HTTPException(status_code=400, detail="Context is empty")
-
     
-    model = pipeline("question-answering", model="distilbert-base-cased-distilled-squad")
+    client = OpenAI(
+        # This is the default and can be omitted
+        api_key=""
+    )
 
     try:
         
-        response = model(question=question, context=context)
+        chat_completion = client.chat.completions.create(
+            messages=[
+                {
+                    "role": "user",
+                    "content": question,
+                }
+            ],
+            model="gpt-3.5-turbo",
+        )
 
-        return {"answer": response["answer"]}
+        response = chat_completion.choices[0].message.content
+
+        return {"success => reponse =": response}
+
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
