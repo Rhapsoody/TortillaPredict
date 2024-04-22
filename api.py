@@ -26,11 +26,10 @@ async def read_root():
 @app.post("/train", tags=["Training/Prediction"])
 async def train_model(uploadedFile: UploadFile = File(...)):
     """
-    Description de l'endpoint
+    Point de terminaison d'entrainement du modele de prédiction des prix.
 
     Args:
-        item_id (int): L'identifiant de l'élément à récupérer.
-        q (str, optional): Un paramètre de requête optionnel.
+        uploadedFile (UploadFile, optional): Le fichier CSV contenant les données d'entrainement.
 
     Returns:
         dict: Les données de l'élément récupéré.
@@ -66,24 +65,36 @@ async def predict_price(input_data: UploadFile = File(...)):
     data = pd.read_csv(input_data.file)
 
     if data is None:
-        raise HTTPException(status_code=400, detail="Le fichier envoyé n'est pas un fichier CSV.")
+        raise HTTPException(status_code=400, detail="Echec de lecture du fichier CSV.")
     
     try:
-        prediction_input = data["Price per kilogram"]
-        prediction = fn.predict_price(prediction_input)
-        return { "prediction": prediction}
+        prediction_input = data.drop("Price per kilogram", axis=1)
+
+        prediction_output = fn.predict_price(prediction_input)
+
+        return {"predictions": prediction_output.tolist()}
     
     except Exception as e:
         return JSONResponse(status_code=400, content={"message": str(e)})
 
 
-@app.post("/model", tags=["HuggingFace"])
+@app.post("/model", tags=["OpenAI"])
 async def question_answering(question: str):
+    """
+    Endpoint faisant appel à l'API de OpenAI pour répondre à une question.
+
+    Args:
+        question (str): La question à laquelle on veut une réponse.
+
+    Returns:
+        dict: La réponse à la question posée.
+    """
+
     if not question:
         raise HTTPException(status_code=400, detail="Question is empty")
     
     client = OpenAI(
-        # This is the default and can be omitted
+        
         api_key=""
     )
 
