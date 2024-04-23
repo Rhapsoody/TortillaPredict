@@ -4,6 +4,8 @@ import pickle
 import random
 import pandas as pd
 
+import numpy as np
+
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error
 from sklearn.ensemble import RandomForestRegressor
@@ -21,21 +23,29 @@ def init_model_training(data: pd.DataFrame):
 
     try: 
         if not isinstance(data, pd.DataFrame):
-            raise ValueError("Le dataset doit être un DataFrame")
+            raise ValueError("Le dataset doit être un DataFrame")     
+        
+        #nettoyage et préparation des données
+        cleaned_data = clean_data(data)
+        
+        #selection d'un echantillon de données pour l'entrainement
+        cleaned_data = cleaned_data.sample(frac=0.2, random_state=1)
 
-        X = data.drop("Price per kilogram", axis=1)
-        target_value = data["Price per kilogram"]
+        X = cleaned_data.drop("Price per kilogram", axis=1)
+        target_value = cleaned_data["Price per kilogram"]
 
-        print("training model...")
 
         # Entrainement du modèle
         X_train, X_test, y_train, y_test = train_test_split(X, target_value, test_size=0.2, random_state=42)
-        model = RandomForestRegressor(n_estimators=20, random_state=1)
+        model = RandomForestRegressor(n_estimators=15, random_state=1)
         model.fit(X_train, y_train)
         
-        model_name = f"model_{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}.pkl"
+        # Evaluation du modèle
+        y_pred = model.predict(X_test)
+        mse = mean_squared_error(y_test, y_pred)
 
-        print(f"Saving model to {model_name}")
+        # Sauvegarde du modèle
+        model_name = f"model_{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}.pkl"
 
         if not os.path.exists("models"):
             os.makedirs("models")
@@ -44,7 +54,7 @@ def init_model_training(data: pd.DataFrame):
             pickle.dump(model, in_save_file)
         
         if os.path.exists(f'models/' + model_name):
-            return {"Training model" : "Done...", "model_name": model_name}
+            return {"model_name": model_name, "mse": mse}
         else:
             raise RuntimeError("Erreur lors de la sauvegarde du modèle")
         
@@ -80,7 +90,7 @@ def get_last_saved_model():
         return {"error": f"Une erreur est survenue lors de la récupération du modèle"}
 
 
-def predict_price(data: pd.DataFrame):
+def predict_price(data: pd.DataFrame, prediction_count: int = 100): 
     """
     Fonction de prédiction des prix.
 
@@ -92,11 +102,49 @@ def predict_price(data: pd.DataFrame):
     """ 
     try:
         model = get_last_saved_model()
+        
+        data_for_prediction = clean_data(data)
+        
+        data_for_prediction = data_for_prediction.head(prediction_count)
+        
+        data_for_prediction = data_for_prediction.drop("Price per kilogram", axis=1)
+        
+        if isinstance(data_for_prediction, dict) and "Error" in data_for_prediction:
+            print("Une erreur s'est produite lors du nettoyage des données:", data_for_prediction["Error"])
+            exit(1)
 
-        print("last model loaded...", model)
-
-        prediction = model.predict(data)
+        prediction = model.predict(data_for_prediction)
+        
         return prediction
+    
+    except Exception as e:
+        return {"Error": str(e)}
+    
+
+def clean_data(data: pd.DataFrame):
+    """
+    Fonction de nettoyage des données.
+
+    Args:
+        data: Les données à nettoyer.
+
+    Returns:
+        pd.DataFrame: Les données nettoyées.
+    """
+    try:
+        if not isinstance(data, pd.DataFrame):
+            raise ValueError("Le dataset doit être un DataFrame")
+        
+        data_cleaned = data.dropna()
+        data_cleaned = data_cleaned.drop_duplicates()
+
+        numeric_cols = data_cleaned.select_dtypes(include=[np.number]).columns
+        data_cleaned[numeric_cols] = data_cleaned[numeric_cols].apply(lambda x: x.fillna(x.median()))
+
+        categorical_cols = data_cleaned.select_dtypes(include=['object', 'category']).columns
+        data_cleaned = pd.get_dummies(data_cleaned, columns=categorical_cols)
+
+        return data_cleaned
     
     except Exception as e:
         return {"Error": str(e)}

@@ -12,8 +12,8 @@ def train_model(file):
     return response.json()
 
 # Function to make price prediction
-def predict_price(file):
-    response = requests.post(f"{API_BASE_URL}/predict", files={"input_data": (file.name, file, file.type)})
+def predict_price(file, prediction_count):
+    response = requests.post(f"{API_BASE_URL}/predict", files={"input_data": (file.name, file, file.type)}, params={"prediction_count": prediction_count})
     return response.json()
 
 # Function to retrieve the model
@@ -55,11 +55,8 @@ def model_training_page():
         try:
             # Train the model
             response = train_model(train_file)
-            if response.get('status_code') == 200:
-                st.success(f"{response.get('message')}")
-                st.success("Model : " +f"{response.get('model')}")
-            else:
-                st.error(response.get('message'))
+            st.success("Model trained successfully!")
+            st.success(response)
         except Exception as e:
             st.error("An error occurred:", e)
 
@@ -67,6 +64,7 @@ def model_training_page():
 # Price prediction page
 def price_prediction_page():
     st.header("Price Prediction")
+    prediction_count = st.number_input("Number of predictions", min_value=1, value=100)
 
     # File uploader for price prediction data
     prediction_file = st.file_uploader("Prediction Data (CSV)", type=["csv"])
@@ -74,13 +72,14 @@ def price_prediction_page():
     if st.button("Predict Price") and prediction_file is not None:
         try:
             # Make price prediction
-            response = predict_price(prediction_file)
-            if response.get('status_code') == 200:
-                st.success(f"Prediction successful! Result: {response.get('predictions')}")
-            else:
-                st.error("Error during prediction:", response)
+            response = predict_price(prediction_file, prediction_count)
+            response = response
+    
+            st.success(f"Prediction successful!")
+            st.success(response)            
         except Exception as e:
-            st.error("An error occurred:", e)
+            st.error("An error occurred:")
+            st.error(e)
 
 
 # Retrieve model page

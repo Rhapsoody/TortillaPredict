@@ -3,7 +3,7 @@
 from fastapi import FastAPI
 import pickle
 
-from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi import FastAPI, UploadFile, File, HTTPException, Query
 from fastapi.responses import JSONResponse
 
 import function as fn
@@ -12,10 +12,9 @@ import pandas as pd
 
 from openai import OpenAI
 
+import json
+
 app = FastAPI()
-
-# TODO: Repasser sur les commentaires
-
 
 
 @app.get("/")
@@ -48,13 +47,13 @@ async def train_model(uploadedFile: UploadFile = File(...)):
     try:
         model = fn.init_model_training(data)
 
-        return {"status_code": 200, "message": "Entrainement du modèle réussi...", "model": model}
+        return {"model_infos": model}
     except Exception as e:
         return JSONResponse(status_code=400, content={"message": str(e)})
 
 
 @app.post("/predict", tags=["Training/Prediction"])
-async def predict_price(input_data: UploadFile = File(...)):
+async def predict_price(input_data: UploadFile = File(...), prediction_count: int = Query(default=100)):
 
     if input_data is None:
         raise HTTPException(status_code=400, detail="Aucun fichier n'a été envoyé.")
@@ -68,11 +67,9 @@ async def predict_price(input_data: UploadFile = File(...)):
         raise HTTPException(status_code=400, detail="Echec de lecture du fichier CSV.")
     
     try:
-        prediction_input = data.drop("Price per kilogram", axis=1)
+        prediction_output = fn.predict_price(data, prediction_count)
 
-        prediction_output = fn.predict_price(prediction_input)
-
-        return {"status_code": 200, "predictions": prediction_output.tolist()}
+        return json.dumps({"prediction": prediction_output.tolist()})
     
     except Exception as e:
         return JSONResponse(status_code=400, content={"message": str(e)})
