@@ -21,6 +21,14 @@ def retrieve_model(question):
     response = requests.post(f"{API_BASE_URL}/model?question={question}")
     return response.json()
 
+
+def show_table(file, count):
+    table = pd.read_csv(file)
+    data_cleaned = table.dropna()
+    data_cleaned = data_cleaned.drop_duplicates()
+    data_cleaned = data_cleaned.head(count)
+    st.write(data_cleaned) 
+
 # Main page
 def main():
     st.title("Prediction of tortilla prices in Mexico")
@@ -67,18 +75,20 @@ def price_prediction_page():
     prediction_count = st.number_input("Number of predictions", min_value=1, value=100)
 
     # File uploader for price prediction data
-    prediction_file = st.file_uploader("Prediction Data (CSV)", type=["csv"])
+    prediction_file = st.file_uploader("Prediction Data (CSV)", type=["csv"])   
+    
+    if prediction_file is not None:
+       show_table(prediction_file, prediction_count)
 
     if st.button("Predict Price") and prediction_file is not None:
         try:
             # Make price prediction
             response = predict_price(prediction_file, prediction_count)
-            response = response
-    
             st.success(f"Prediction successful!")
-            st.success(response)            
+            st.success(response)  
+                    
         except Exception as e:
-            st.error("An error occurred:")
+            st.error("An error occurred")
             st.error(e)
 
 
