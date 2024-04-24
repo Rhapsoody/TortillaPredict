@@ -34,9 +34,17 @@ Endpoint : **/predict**
 
 Description : il permet de prédire les prix futurs à partir de données d'entrée fournies par l'utilisateur.
 Utilisez __tortilla_prices.csv__ ou un fichier ayant des données similaires pour prédire les prix. 
-Les données seront nettoyés par algorithme pas besoin de le faire avant !
+Les données seront nettoyées par algorithme pas besoin de le faire avant !
 
 ### 3. Question-Réponse avec OpenAI
 Endpoint : **/model**
 
 Description : il permet de poser des questions à un modèle OpenAI et d'obtenir des réponses.
+
+Ajoutez votre clé API dans le fichier `api.py` avant utilisation :
+
+```python
+client = OpenAI(
+    api_key="sk-<VOTRE_CLÉ_API>",
+)
+```
